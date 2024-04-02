@@ -15,7 +15,7 @@ pubEC2ID=$( jq -r '."pubEC2ID"' $resources )
 privateHostSG=$( jq -r '."privateHostSG"' $resources )
 
 # Delete EC2 instance
-aws ec2 terminate-instances --instance-ids $ec2Instance | grep nothing
+aws ec2 terminate-instances --instance-ids $pubEC2ID | grep nothing
 
 ec2status=$( aws ec2 describe-instances --instance-ids $ec2Instance --query 'Reservations[].Instances[].State.Name' --output text  )
 
