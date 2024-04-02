@@ -40,8 +40,8 @@ aws ec2 detach-internet-gateway --internet-gateway-id $internetGateway --vpc-id 
 aws ec2 delete-internet-gateway --internet-gateway-id $internetGateway
 
 # Delete Segurity Group
-aws ec2 delete-security-group --group-id $publicSG
 aws ec2 delete-security-group --group-id $privateHostSG
+aws ec2 delete-security-group --group-id $publicSG
 
 # Delete VPC
 aws ec2 delete-vpc --vpc-id $VPC
