@@ -72,7 +72,8 @@ aws ec2 authorize-security-group-ingress --group-id "$privateHostSG" --protocol 
 # Create public EC2 Instance
 pubEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --instance-type t2.micro --key-name CSE3ACX-A3-key-pair --security-group-ids "$publicSG" --subnet-id "$subnet0" --user-data file://CSE3ACX-A3-public-user-data.txt --query Instances[].InstanceId --output text)
 
-
+# Determine public IP address of instance
+pubIP=$(aws ec2 describe-instances --instance-ids $pubEC2ID --query Reservations[].Instances[].PublicIpAddress --output text)
 
 
 
@@ -93,3 +94,9 @@ JSON_STRING=$( jq -n \
                   '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG}' )
 
 echo $JSON_STRING > $resources
+
+#  End of script status
+greenText='\033[0;32m'
+NC='\033[0m' # No Color
+echo "Connect to CLI using the command below"
+echo -e "\n${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A2-key-pair.pem ec2-user@$pubIP ${NC}\n"
