@@ -99,4 +99,4 @@ echo $JSON_STRING > $resources
 greenText='\033[0;32m'
 NC='\033[0m' # No Color
 echo "Connect to CLI using the command below"
-echo -e "\n${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A2-key-pair.pem ec2-user@$pubIP ${NC}\n"
+echo -e "\n${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP ${NC}\n"
