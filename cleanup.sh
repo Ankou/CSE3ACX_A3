@@ -17,12 +17,12 @@ privateHostSG=$( jq -r '."privateHostSG"' $resources )
 # Delete EC2 instance
 aws ec2 terminate-instances --instance-ids $pubEC2ID | grep nothing
 
-ec2status=$( aws ec2 describe-instances --instance-ids $ec2Instance --query 'Reservations[].Instances[].State.Name' --output text  )
+ec2status=$( aws ec2 describe-instances --instance-ids $pubEC2ID --query 'Reservations[].Instances[].State.Name' --output text  )
 
 while [ $ec2status != "terminated" ]
 do
   echo Status: $ec2status trying again in 10 seconds
-  ec2status=$( aws ec2 describe-instances --instance-ids $ec2Instance --query 'Reservations[].Instances[].State.Name' --output text  )
+  ec2status=$( aws ec2 describe-instances --instance-ids $pubEC2ID --query 'Reservations[].Instances[].State.Name' --output text  )
   sleep 10
 done
 
@@ -47,7 +47,7 @@ aws ec2 delete-security-group --group-id $privateHostSG
 aws ec2 delete-vpc --vpc-id $VPC
 
 # Delete key-pair
-aws ec2 delete-key-pair --key-name CSE3ACX-A2-key-pair | grep nothing 
+aws ec2 delete-key-pair --key-name CSE3ACX-A3-key-pair | grep nothing 
 
 rm -f $resources
 rm -f ~/.ssh/CSE3ACX-A3-key-pair.pem
