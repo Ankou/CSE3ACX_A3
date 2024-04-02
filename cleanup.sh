@@ -12,9 +12,11 @@ internetGateway=$( jq -r '."internetGateway"' $resources )
 #rtbassoc=$( aws ec2 describe-route-tables --filters 'Name=vpc-id,Values='$VPC | jq -r '."RouteTables"[]."Associations"[]."RouteTableAssociationId"' )
 publicSG=$( jq -r '."publicSG"' $resources )
 pubEC2ID=$( jq -r '."pubEC2ID"' $resources )
+privEC2ID=$( jq -r '."privEC2ID"' $resources )
 privateHostSG=$( jq -r '."privateHostSG"' $resources )
 
 # Delete EC2 instance
+aws ec2 terminate-instances --instance-ids $privEC2ID | grep nothing
 aws ec2 terminate-instances --instance-ids $pubEC2ID | grep nothing
 
 ec2status=$( aws ec2 describe-instances --instance-ids $pubEC2ID --query 'Reservations[].Instances[].State.Name' --output text  )
@@ -23,6 +25,18 @@ while [ $ec2status != "terminated" ]
 do
   echo Status: $ec2status trying again in 10 seconds
   ec2status=$( aws ec2 describe-instances --instance-ids $pubEC2ID --query 'Reservations[].Instances[].State.Name' --output text  )
+  sleep 10
+done
+
+echo Status: $ec2status Checking Private instance
+
+# Also check the private EC2 instance is terminated 
+ec2status=$( aws ec2 describe-instances --instance-ids $privEC2ID --query 'Reservations[].Instances[].State.Name' --output text  )
+
+while [ $ec2status != "terminated" ]
+do
+  echo Status: $ec2status trying again in 10 seconds
+  ec2status=$( aws ec2 describe-instances --instance-ids $privEC2ID --query 'Reservations[].Instances[].State.Name' --output text  )
   sleep 10
 done
 

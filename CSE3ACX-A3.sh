@@ -75,6 +75,10 @@ pubEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --in
 # Determine public IP address of instance
 pubIP=$(aws ec2 describe-instances --instance-ids $pubEC2ID --query Reservations[].Instances[].PublicIpAddress --output text)
 
+# Create private EC2 Instance
+privEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --instance-type t2.micro --key-name CSE3ACX-A3-key-pair --security-group-ids "$privateHostSG" --subnet-id "$subnet1" --query Instances[].InstanceId --output text)
+
+
 
 
 ##############   End script #################
@@ -91,7 +95,8 @@ JSON_STRING=$( jq -n \
                   --arg sg "$publicSG" \
                   --arg privSG "$privateHostSG" \
                   --arg pubEC2 "$pubEC2ID" \
-                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG}' )
+                  --arg privEC2ID "$privEC2ID" \
+                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID}' )
 
 echo $JSON_STRING > $resources
 
