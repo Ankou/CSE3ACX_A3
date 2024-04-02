@@ -50,4 +50,4 @@ aws ec2 delete-vpc --vpc-id $VPC
 aws ec2 delete-key-pair --key-name CSE3ACX-A2-key-pair | grep nothing 
 
 rm -f $resources
-rm -f ~/.ssh/CSE3ACX-A2-key-pair.pem
+rm -f ~/.ssh/CSE3ACX-A3-key-pair.pem
