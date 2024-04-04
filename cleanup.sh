@@ -80,20 +80,19 @@ aws ec2 detach-internet-gateway --internet-gateway-id $internetGateway --vpc-id 
 echo -e "\e[31mDeleting internet gateway\e[0m"
 aws ec2 delete-internet-gateway --internet-gateway-id $internetGateway
 
-# Delete route table
-echo -e "\e[31mDeleting Public route table\e[0m"
-aws ec2 delete-route-table --route-table-id $PubRouteTable
-
-echo -e "\e[31mDeleting Private route table\e[0m"
-aws ec2 delete-route-table --route-table-id $PrivRouteTable
-
-
 # Delete subnet
 echo -e "\e[31mDeleting Public subnet\e[0m"
 aws ec2 delete-subnet --subnet-id $subnet0
 
 echo -e "\e[31mDeleting Private subnet\e[0m"
 aws ec2 delete-subnet --subnet-id $subnet1
+
+# Delete route table
+echo -e "\e[31mDeleting Public route table\e[0m"
+aws ec2 delete-route-table --route-table-id $PubRouteTable
+
+echo -e "\e[31mDeleting Private route table\e[0m"
+aws ec2 delete-route-table --route-table-id $PrivRouteTable
 
 # Delete Segurity Group
 echo -e "\e[31mDeleting Private Security Group\e[0m"
@@ -107,7 +106,7 @@ echo -e "\e[31mReleasing Elastic IP\e[0m"
 aws ec2 release-address --allocation-id $eipalloc
 
 # Delete VPC
-cho -e "\e[31mDeleting VPC\e[0m"
+echo -e "\e[31mDeleting VPC\e[0m"
 aws ec2 delete-vpc --vpc-id $VPC
 
 # Delete key-pair
