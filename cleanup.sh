@@ -59,6 +59,18 @@ aws ec2 detach-internet-gateway --internet-gateway-id $internetGateway --vpc-id 
 aws ec2 delete-internet-gateway --internet-gateway-id $internetGateway
 aws ec2 delete-nat-gateway --nat-gateway-id $natGateway
 
+# Wait for NAT gateway to be deleted
+natState=$(aws ec2 describe-nat-gateways --nat-gateway-ids $natGateway --query NatGateways[].State --output text)
+
+while [ $natState != "deleted" ]
+do
+  echo NAT State: $natState trying again in 10 seconds
+  natState=$(aws ec2 describe-nat-gateways --nat-gateway-ids $natGateway --query NatGateways[].State --output text)
+  sleep 10
+done
+
+echo NAT State: $natState continuing
+
 # Delete route table
 aws ec2 delete-route-table --route-table-id $PrivRouteTable
 

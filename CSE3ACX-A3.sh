@@ -84,6 +84,9 @@ eipalloc=$( aws ec2 describe-addresses --query "Addresses[?PublicIp == '$natPubI
 # Create NAT gateway
 natID=$(aws ec2 create-nat-gateway --subnet-id $subnet0 --allocation-id $eipalloc --query NatGateway.NatGatewayId --output text)
 
+echo sleeping for 40 seconds
+sleep 40
+
 # Create route in Private subnet to use NAT gateway
 aws ec2 create-route --route-table-id "$PrivRouteTable" --destination-cidr-block 0.0.0.0/0 --gateway-id "$natID" --query 'Return' --output text
 
