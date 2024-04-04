@@ -42,6 +42,8 @@ do
   sleep 10
 done
 
+echo Status: Private instance is now $ec2status 
+
 # Delete subnet
 aws ec2 delete-subnet --subnet-id $subnet0
 aws ec2 delete-subnet --subnet-id $subnet1
@@ -56,6 +58,9 @@ aws ec2 detach-internet-gateway --internet-gateway-id $internetGateway --vpc-id 
 # Delete internet / NAT gateway
 aws ec2 delete-internet-gateway --internet-gateway-id $internetGateway
 aws ec2 delete-nat-gateway --nat-gateway-id $natGateway
+
+# Delete route table
+aws ec2 delete-route-table --route-table-id $PrivRouteTable
 
 # Delete Segurity Group
 aws ec2 delete-security-group --group-id $privateHostSG

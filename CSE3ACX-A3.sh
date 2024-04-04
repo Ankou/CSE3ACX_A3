@@ -91,7 +91,7 @@ aws ec2 create-route --route-table-id "$PrivRouteTable" --destination-cidr-block
 privEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --instance-type t2.micro --key-name CSE3ACX-A3-key-pair --security-group-ids "$privateHostSG" --subnet-id "$subnet1" --user-data file://CSE3ACX-A3-private-user-data.txt --query Instances[].InstanceId --output text)
 
 # Determine the IP address for the private EC2 instance
-privIP=$(aws ec2 describe-instances --instance-ids i-07fc692cd90915343 --query Reservations[].Instances[].PrivateIpAddress --output text)
+privIP=$(aws ec2 describe-instances --instance-ids $privEC2ID --query Reservations[].Instances[].PrivateIpAddress --output text)
 
 # Get status of EC2 instances 
 pubHostStatus=$(aws ec2 describe-instance-status --instance-ids "$pubEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
