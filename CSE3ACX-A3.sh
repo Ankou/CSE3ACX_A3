@@ -58,7 +58,7 @@ aws ec2 create-key-pair --key-name CSE3ACX-A3-key-pair --query 'KeyMaterial' --o
 chmod 400 ~/.ssh/CSE3ACX-A3-key-pair.pem
 
 # Create Security Group for public host
-publicSG=$(aws ec2 create-security-group --group-name webApp-sg --description "Security group for host in public subnet" --vpc-id "$VPC" --query 'GroupId' --output text)
+publicSG=$(aws ec2 create-security-group --group-name publicSG --description "Security group for host in public subnet" --vpc-id "$VPC" --query 'GroupId' --output text)
 
 # Allow SSH and http traffic
 aws ec2 authorize-security-group-ingress --group-id "$publicSG" --protocol tcp --port 22 --cidr 0.0.0.0/0 --query 'Return' --output text
@@ -75,8 +75,45 @@ pubEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --in
 # Determine public IP address of instance
 pubIP=$(aws ec2 describe-instances --instance-ids $pubEC2ID --query Reservations[].Instances[].PublicIpAddress --output text)
 
+# Allocate an Elastic IP address
+natPubIP=$(aws ec2 allocate-address --query 'PublicIp' --output text)
+
+# Determine allocation IP
+eipalloc=$( aws ec2 describe-addresses --query "Addresses[?PublicIp == '$natPubIP'].AllocationId" --output text )
+
+# Create NAT gateway
+natID=$(aws ec2 create-nat-gateway --subnet-id $subnet0 --allocation-id $eipalloc --query NatGateway.NatGatewayId --output text)
+
+# Create route in Private subnet to use NAT gateway
+aws ec2 create-route --route-table-id "$PrivRouteTable" --destination-cidr-block 0.0.0.0/0 --gateway-id "$natID" --query 'Return' --output text
+
 # Create private EC2 Instance
-privEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --instance-type t2.micro --key-name CSE3ACX-A3-key-pair --security-group-ids "$privateHostSG" --subnet-id "$subnet1" --query Instances[].InstanceId --output text)
+privEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --instance-type t2.micro --key-name CSE3ACX-A3-key-pair --security-group-ids "$privateHostSG" --subnet-id "$subnet1" --user-data file://CSE3ACX-A3-private-user-data.txt --query Instances[].InstanceId --output text)
+
+# Determine the IP address for the private EC2 instance
+privIP=$(aws ec2 describe-instances --instance-ids i-07fc692cd90915343 --query Reservations[].Instances[].PrivateIpAddress --output text)
+
+# Get status of EC2 instances 
+pubHostStatus=$(aws ec2 describe-instance-status --instance-ids "$pubEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
+#privHostStatus=$(aws ec2 describe-instance-status --instance-ids "$privEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
+
+# Keep checking until they are running so we can copy ssh key to public host
+while [ "$pubHostStatus" != "running" ]
+do 
+  echo -e "\n\t\t Public host status is $pubHostStatus waiting 10 seconds and trying again."
+  pubHostStatus=$(aws ec2 describe-instance-status --instance-ids "$pubEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
+  sleep 10
+done
+
+while [ "$privHostStatus" != "running" ]
+do 
+  echo -e "\n\t\t Private host status is $privHostStatus waiting 10 seconds and trying again."
+  privHostStatus=$(aws ec2 describe-instance-status --instance-ids "$privEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
+  sleep 10
+done
+
+# Copy private key to public host
+scp -o StrictHostKeyChecking=no  -i ~/.ssh/CSE3ACX-A3-key-pair.pem  ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP:~/.ssh/CSE3ACX-A3-key-pair.pem
 
 
 
@@ -103,5 +140,7 @@ echo $JSON_STRING > $resources
 #  End of script status
 greenText='\033[0;32m'
 NC='\033[0m' # No Color
-echo "Connect to CLI using the command below"
-echo -e "\n${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP ${NC}\n"
+echo "Connect to the public host using the CLI command below from CloudShell"
+echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP ${NC}\n"
+echo "Connect to private host using the CLI command below (on the public host)"
+echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP ${NC}\n"

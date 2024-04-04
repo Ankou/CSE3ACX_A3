@@ -1,0 +1,6 @@
+#!/bin/bash
+yum update -y
+yum install -y httpd
+systemctl start httpd
+systemctl enable httpd
+sudo curl https://raw.githubusercontent.com/Ankou/CSE3ACX_A2/main/index.html > /var/www/html/index.html
