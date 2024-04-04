@@ -110,7 +110,7 @@ done
 
 while [ "$privHostStatus" != "passed" ]
 do 
-  echo -e "\n\t\t Private host status is $privHostStatus waiting 10 seconds and trying again."
+  echo -e "\t\t Private host status is $privHostStatus waiting 10 seconds and trying again."
   privHostStatus=$(aws ec2 describe-instance-status --instance-id $privEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
   sleep 10
 done
