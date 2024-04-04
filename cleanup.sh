@@ -55,13 +55,7 @@ aws ec2 delete-route --route-table-id $PubRouteTable --destination-cidr-block 0.
 echo -e "\e[31mDeleting Private default route route\e[0m"
 aws ec2 delete-route --route-table-id $PrivRouteTable --destination-cidr-block 0.0.0.0/0
 
-# Detach internet gateway
-echo -e "\e[31mDetaching internet gateway\e[0m"
-aws ec2 detach-internet-gateway --internet-gateway-id $internetGateway --vpc-id $VPC
-
-# Delete internet / NAT gateway
-echo -e "\e[31mDeleting internet gateway\e[0m"
-aws ec2 delete-internet-gateway --internet-gateway-id $internetGateway
+# Delete NAT gateway
 
 echo -e "\e[31mDeleting NAT gateway\e[0m"
 aws ec2 delete-nat-gateway --nat-gateway-id $natGateway
@@ -78,9 +72,17 @@ done
 
 echo NAT State: $natState continuing
 
+# Detach internet gateway
+echo -e "\e[31mDetaching internet gateway\e[0m"
+aws ec2 detach-internet-gateway --internet-gateway-id $internetGateway --vpc-id $VPC
+
+# Delete internet gateway
+echo -e "\e[31mDeleting internet gateway\e[0m"
+aws ec2 delete-internet-gateway --internet-gateway-id $internetGateway
+
 # Delete route table
 echo -e "\e[31mDeleting Public route table\e[0m"
-aws ec2 delete-route-table --route-table-id PubRouteTable
+aws ec2 delete-route-table --route-table-id $PubRouteTable
 
 echo -e "\e[31mDeleting Private route table\e[0m"
 aws ec2 delete-route-table --route-table-id $PrivRouteTable
