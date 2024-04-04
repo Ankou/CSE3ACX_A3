@@ -98,12 +98,12 @@ privIP=$(aws ec2 describe-instances --instance-ids $privEC2ID --query Reservatio
 
 # Get status of EC2 instances 
 pubHostStatus=$(aws ec2 describe-instance-status --instance-ids "$pubEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
-#privHostStatus=$(aws ec2 describe-instance-status --instance-ids "$privEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
+privHostStatus=$(aws ec2 describe-instance-status --instance-ids "$privEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
 
 # Keep checking until they are running so we can copy ssh key to public host
 while [ "$pubHostStatus" != "running" ]
 do 
-  echo -e "\n\t\t Public host status is $pubHostStatus waiting 10 seconds and trying again."
+  echo -e "\t\t Public host status is $pubHostStatus waiting 10 seconds and trying again."
   pubHostStatus=$(aws ec2 describe-instance-status --instance-ids "$pubEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
   sleep 10
 done

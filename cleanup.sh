@@ -45,18 +45,25 @@ done
 echo Status: Private instance is now $ec2status 
 
 # Delete subnet
-aws ec2 delete-subnet --subnet-id $subnet0
-aws ec2 delete-subnet --subnet-id $subnet1
+#aws ec2 delete-subnet --subnet-id $subnet0
+#aws ec2 delete-subnet --subnet-id $subnet1
 
 # Delete route
+echo -e "\e[31mDeleting Public default route\e[0m"
 aws ec2 delete-route --route-table-id $PubRouteTable --destination-cidr-block 0.0.0.0/0
+
+echo -e "\e[31mDeleting Private default route route\e[0m"
 aws ec2 delete-route --route-table-id $PrivRouteTable --destination-cidr-block 0.0.0.0/0
 
 # Detach internet gateway
+echo -e "\e[31mDetaching internet gateway\e[0m"
 aws ec2 detach-internet-gateway --internet-gateway-id $internetGateway --vpc-id $VPC
 
 # Delete internet / NAT gateway
+echo -e "\e[31mDeleting internet gateway\e[0m"
 aws ec2 delete-internet-gateway --internet-gateway-id $internetGateway
+
+echo -e "\e[31mDeleting NAT gateway\e[0m"
 aws ec2 delete-nat-gateway --nat-gateway-id $natGateway
 
 # Wait for NAT gateway to be deleted
@@ -72,16 +79,33 @@ done
 echo NAT State: $natState continuing
 
 # Delete route table
+echo -e "\e[31mDeleting Public route table\e[0m"
+aws ec2 delete-route-table --route-table-id PubRouteTable
+
+echo -e "\e[31mDeleting Private route table\e[0m"
 aws ec2 delete-route-table --route-table-id $PrivRouteTable
 
+
+# Delete subnet
+echo -e "\e[31mDeleting Public subnet\e[0m"
+aws ec2 delete-subnet --subnet-id $subnet0
+
+echo -e "\e[31mDeleting Private subnet\e[0m"
+aws ec2 delete-subnet --subnet-id $subnet1
+
 # Delete Segurity Group
+echo -e "\e[31mDeleting Private Security Group\e[0m"
 aws ec2 delete-security-group --group-id $privateHostSG
+
+echo -e "\e[31mDeleting Public Security Group\e[0m"
 aws ec2 delete-security-group --group-id $publicSG
 
 # Release elastic IP
+echo -e "\e[31mReleasing Elastic IP\e[0m"
 aws ec2 release-address --allocation-id $eipalloc
 
 # Delete VPC
+cho -e "\e[31mDeleting VPC\e[0m"
 aws ec2 delete-vpc --vpc-id $VPC
 
 # Delete key-pair
