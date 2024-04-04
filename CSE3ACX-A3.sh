@@ -133,7 +133,9 @@ JSON_STRING=$( jq -n \
                   --arg privSG "$privateHostSG" \
                   --arg pubEC2 "$pubEC2ID" \
                   --arg privEC2ID "$privEC2ID" \
-                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID}' )
+                  --arg natID "$natID" \
+                  --arg eipalloc "$eipalloc" \
+                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID, natID: $natID, eipalloc: $eipalloc}' )
 
 echo $JSON_STRING > $resources
 
@@ -143,4 +145,4 @@ NC='\033[0m' # No Color
 echo "Connect to the public host using the CLI command below from CloudShell"
 echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP ${NC}\n"
 echo "Connect to private host using the CLI command below (on the public host)"
-echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP ${NC}\n"
+echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$privIP ${NC}\n"
