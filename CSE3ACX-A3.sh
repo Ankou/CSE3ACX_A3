@@ -97,21 +97,21 @@ privEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --i
 privIP=$(aws ec2 describe-instances --instance-ids $privEC2ID --query Reservations[].Instances[].PrivateIpAddress --output text)
 
 # Get status of EC2 instances 
-pubHostStatus=$(aws ec2 describe-instance-status --instance-ids "$pubEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
-privHostStatus=$(aws ec2 describe-instance-status --instance-ids "$privEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
+pubHostStatus=$(aws ec2 describe-instance-status --instance-id $pubEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
+privHostStatus=$(aws ec2 describe-instance-status --instance-id $privEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
 
 # Keep checking until they are running so we can copy ssh key to public host
-while [ "$pubHostStatus" != "running" ]
+while [ "$pubHostStatus" != "passed" ]
 do 
   echo -e "\t\t Public host status is $pubHostStatus waiting 10 seconds and trying again."
-  pubHostStatus=$(aws ec2 describe-instance-status --instance-ids "$pubEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
+  pubHostStatus=$(aws ec2 describe-instance-status --instance-id $pubEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
   sleep 10
 done
 
-while [ "$privHostStatus" != "running" ]
+while [ "$privHostStatus" != "passed" ]
 do 
   echo -e "\n\t\t Private host status is $privHostStatus waiting 10 seconds and trying again."
-  privHostStatus=$(aws ec2 describe-instance-status --instance-ids "$privEC2ID" --query InstanceStatuses[].InstanceState.Name --output text)
+  privHostStatus=$(aws ec2 describe-instance-status --instance-id $privEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
   sleep 10
 done
 
