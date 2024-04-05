@@ -98,7 +98,6 @@ privIP=$(aws ec2 describe-instances --instance-ids $privEC2ID --query Reservatio
 
 # Get status of EC2 instances 
 pubHostStatus=$(aws ec2 describe-instance-status --instance-id $pubEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
-privHostStatus=$(aws ec2 describe-instance-status --instance-id $privEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
 
 # Keep checking until they are running so we can copy ssh key to public host
 while [ "$pubHostStatus" != "passed" ]
@@ -107,6 +106,8 @@ do
   pubHostStatus=$(aws ec2 describe-instance-status --instance-id $pubEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
   sleep 10
 done
+
+privHostStatus=$(aws ec2 describe-instance-status --instance-id $privEC2ID --query InstanceStatuses[].SystemStatus.Details[].Status --output text)
 
 while [ "$privHostStatus" != "passed" ]
 do 
@@ -147,6 +148,16 @@ listenerARN=$(aws elbv2 create-listener --load-balancer-arn "$elbv2ARN" --protoc
 # Determine DNS name
 webURL=$(aws elbv2 describe-load-balancers --load-balancer-arns "$elbv2ARN" --query LoadBalancers[].DNSName --output text)
 
+# Get Load balancer state
+lbState=$(aws elbv2 describe-load-balancers --load-balancer-arns $elbv2ARN --query LoadBalancers[].State.Code --output text)
+
+# Wait for the Load balancer to become active
+while [ "$lbState" != "active" ]
+do 
+  echo -e "\t\t Load balancer state is $lbState waiting 10 seconds and trying again."
+  lbState=$(aws elbv2 describe-load-balancers --load-balancer-arns $elbv2ARN --query LoadBalancers[].State.Code --output text)
+  sleep 10
+done
 
 ##############   End script #################
 
@@ -170,7 +181,7 @@ JSON_STRING=$( jq -n \
                   --arg elbv2ARN "$elbv2ARN" \
                   --arg targetGroupARN "$targetGroupARN" \
                   --arg listenerARN "$listenerARN" \
-                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, Subnet1: $sn2, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID, natID: $natID, eipalloc: $eipalloc, elbSG: $elbSG, elbv2ARN: $elbv2ARN, targetGroupARN: $targetGroupARN, listenerARN: $listenerARN}' )
+                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, Subnet2: $sn2, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID, natID: $natID, eipalloc: $eipalloc, elbSG: $elbSG, elbv2ARN: $elbv2ARN, targetGroupARN: $targetGroupARN, listenerARN: $listenerARN}' )
 
 echo $JSON_STRING > $resources
 
