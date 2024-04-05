@@ -11,7 +11,7 @@ VPC=$(aws ec2 create-vpc \
     --tag-specifications 'ResourceType=vpc,Tags=[{Key=Name,Value=a3VPC},{Key=Project,Value="CSE3ACX-A3"}]'  \
     --query Vpc.VpcId --output text)
 
-# Create private subnet in the new VPC
+# Create public subnet in the new VPC
 subnet0=$(aws ec2 create-subnet --vpc-id "$VPC" --cidr-block 172.16.0.0/24 --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=Subnet0 Public}]' --availability-zone us-east-1a --query Subnet.SubnetId --output text)
 
 # Determine the route table id for the VPC
@@ -120,17 +120,23 @@ scp -o StrictHostKeyChecking=no  -i ~/.ssh/CSE3ACX-A3-key-pair.pem  ~/.ssh/CSE3A
 
 #######  Elastic Load Balancer stuff
 
+# Create public subnet (ELB requires 2 subnets in different AZs)
+subnet2=$(aws ec2 create-subnet --vpc-id "$VPC" --cidr-block 172.16.2.0/24 --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=Subnet2 Public}]' --availability-zone us-east-1b --query Subnet.SubnetId --output text)
+
 # Create Security Group for ELB
-elbSG=$(aws ec2 create-security-group --group-name publicSG --description "Security group for host in public subnet" --vpc-id "$VPC" --query 'GroupId' --output text)
+elbSG=$(aws ec2 create-security-group --group-name elbSG --description "Security group for Elastic Load Balancer" --vpc-id "$VPC" --query 'GroupId' --output text)
+
+# Allow http from ELB
+aws ec2 authorize-security-group-ingress --group-id "$privateHostSG" --protocol tcp --port 80 --source-group "$elbSG"  --query 'Return' --output text
 
 # Allow HTTP 
 aws ec2 authorize-security-group-ingress --group-id "$elbSG" --protocol tcp --port 80 --cidr 0.0.0.0/0 --query 'Return' --output text
 
 # Create Elastic Load Balancer
-elbv2ARN=$(aws elbv2 create-load-balancer --name "CSE3ACX A3 elb" --subnets "$subnet0"  --security-groups "$elbSG" --query LoadBalancers[].LoadBalancerArn --output text)
+elbv2ARN=$(aws elbv2 create-load-balancer --name "CSE3ACX A3 elb" --subnets "$subnet0" "$subnet2" --security-groups "$elbSG" --query LoadBalancers[].LoadBalancerArn --output text)
 
 # Create target group for private web server EC2 instances
-targetGroupARN=$(aws elbv2 create-target-group --name "CSE3ACX A3 web targets" --protocol HTTP --port 80 --vpc-id "$VPC" --ip-address-type ipv4 --query TargetGroups[].TargetGroupArn --output text)
+targetGroupARN=$(aws elbv2 create-target-group --name "CSE3ACX-A3-web-targets" --protocol HTTP --port 80 --vpc-id "$VPC" --ip-address-type ipv4 --query TargetGroups[].TargetGroupArn --output text)
 
 # Add Private EC2 instances to target group
 aws elbv2 register-targets --target-group-arn "$targetGroupARN" --targets Id=$privEC2ID 
@@ -150,6 +156,7 @@ JSON_STRING=$( jq -n \
                   --arg vpcID "$VPC" \
                   --arg sn0 "$subnet0" \
                   --arg sn1 "$subnet1" \
+                  --arg sn2 "$subnet2" \
                   --arg rtb "$PubRouteTable" \
                   --arg privRTB "$PrivRouteTable" \
                   --arg igw "$internetGateway" \
@@ -159,7 +166,11 @@ JSON_STRING=$( jq -n \
                   --arg privEC2ID "$privEC2ID" \
                   --arg natID "$natID" \
                   --arg eipalloc "$eipalloc" \
-                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID, natID: $natID, eipalloc: $eipalloc}' )
+                  --arg elbSG "$elbSG" \
+                  --arg elbv2ARN "$elbv2ARN" \
+                  --arg targetGroupARN "$targetGroupARN" \
+                  --arg listenerARN "$listenerARN" \
+                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, Subnet1: $sn2, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID, natID: $natID, eipalloc: $eipalloc, elbSG: $elbSG, elbv2ARN: $elbv2ARN, targetGroupARN: $targetGroupARN, listenerARN: $listenerARN}' )
 
 echo $JSON_STRING > $resources
 

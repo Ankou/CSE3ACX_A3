@@ -6,6 +6,7 @@ resources=~/resources.json
 VPC=$( jq -r '."VPC-ID"' $resources )
 subnet0=$( jq -r '."Subnet0"' $resources )
 subnet1=$( jq -r '."Subnet1"' $resources )
+subnet2=$( jq -r '."Subnet2"' $resources )
 PubRouteTable=$( jq -r '."PubRouteTable"' $resources )
 PrivRouteTable=$( jq -r '."PrivRouteTable"' $resources )
 internetGateway=$( jq -r '."internetGateway"' $resources )
@@ -16,6 +17,17 @@ pubEC2ID=$( jq -r '."pubEC2ID"' $resources )
 privEC2ID=$( jq -r '."privEC2ID"' $resources )
 privateHostSG=$( jq -r '."privateHostSG"' $resources )
 eipalloc=$( jq -r '."eipalloc"' $resources )
+elbv2ARN=$( jq -r '."elbv2ARN"' $resources )
+targetGroupARN=$( jq -r '."targetGroupARN"' $resources )
+elbSG=$( jq -r '."elbSG"' $resources )
+
+# Delete Elastic Load Balancer
+echo -e "\e[31mDeleting Elastic Load Balancer\e[0m"
+aws elbv2 delete-load-balancer --load-balancer-arn $elbv2ARN
+
+# Delete ELB target group
+echo -e "\e[31mDeleting ELB target group\e[0m"
+aws elbv2 delete-target-group --target-group-arn $targetGroupARN
 
 # Delete EC2 instance
 aws ec2 terminate-instances --instance-ids $privEC2ID | grep nothing
@@ -81,11 +93,14 @@ echo -e "\e[31mDeleting internet gateway\e[0m"
 aws ec2 delete-internet-gateway --internet-gateway-id $internetGateway
 
 # Delete subnet
-echo -e "\e[31mDeleting Public subnet\e[0m"
+echo -e "\e[31mDeleting Public subnet 0\e[0m"
 aws ec2 delete-subnet --subnet-id $subnet0
 
-echo -e "\e[31mDeleting Private subnet\e[0m"
+echo -e "\e[31mDeleting Private subnet 1\e[0m"
 aws ec2 delete-subnet --subnet-id $subnet1
+
+echo -e "\e[31mDeleting Public subnet 2\e[0m"
+aws ec2 delete-subnet --subnet-id $subnet2
 
 # Delete route table
 echo -e "\e[31mDeleting Public route table\e[0m"
@@ -100,6 +115,9 @@ aws ec2 delete-security-group --group-id $privateHostSG
 
 echo -e "\e[31mDeleting Public Security Group\e[0m"
 aws ec2 delete-security-group --group-id $publicSG
+
+echo -e "\e[31mDeleting ELB Security Group\e[0m"
+aws ec2 delete-security-group --group-id $elbSG
 
 # Release elastic IP
 echo -e "\e[31mReleasing Elastic IP\e[0m"
