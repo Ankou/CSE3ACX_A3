@@ -133,7 +133,7 @@ aws ec2 authorize-security-group-ingress --group-id "$privateHostSG" --protocol 
 aws ec2 authorize-security-group-ingress --group-id "$elbSG" --protocol tcp --port 80 --cidr 0.0.0.0/0 --query 'Return' --output text
 
 # Create Elastic Load Balancer
-elbv2ARN=$(aws elbv2 create-load-balancer --name "CSE3ACX A3 elb" --subnets "$subnet0" "$subnet2" --security-groups "$elbSG" --query LoadBalancers[].LoadBalancerArn --output text)
+elbv2ARN=$(aws elbv2 create-load-balancer --name "CSE3ACX-A3-elb" --subnets "$subnet0" "$subnet2" --security-groups "$elbSG" --query LoadBalancers[].LoadBalancerArn --output text)
 
 # Create target group for private web server EC2 instances
 targetGroupARN=$(aws elbv2 create-target-group --name "CSE3ACX-A3-web-targets" --protocol HTTP --port 80 --vpc-id "$VPC" --ip-address-type ipv4 --query TargetGroups[].TargetGroupArn --output text)
