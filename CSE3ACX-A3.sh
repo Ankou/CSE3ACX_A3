@@ -60,7 +60,7 @@ chmod 400 ~/.ssh/CSE3ACX-A3-key-pair.pem
 # Create Security Group for public host
 publicSG=$(aws ec2 create-security-group --group-name publicSG --description "Security group for host in public subnet" --vpc-id "$VPC" --query 'GroupId' --output text)
 
-# Allow SSH and http traffic
+# Allow SSH 
 aws ec2 authorize-security-group-ingress --group-id "$publicSG" --protocol tcp --port 22 --cidr 0.0.0.0/0 --query 'Return' --output text
 
 # Create Security Group for private host
@@ -118,7 +118,28 @@ done
 # Copy private key to public host
 scp -o StrictHostKeyChecking=no  -i ~/.ssh/CSE3ACX-A3-key-pair.pem  ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP:~/.ssh/CSE3ACX-A3-key-pair.pem
 
+#######  Elastic Load Balancer stuff
 
+# Create Security Group for ELB
+elbSG=$(aws ec2 create-security-group --group-name publicSG --description "Security group for host in public subnet" --vpc-id "$VPC" --query 'GroupId' --output text)
+
+# Allow HTTP 
+aws ec2 authorize-security-group-ingress --group-id "$elbSG" --protocol tcp --port 80 --cidr 0.0.0.0/0 --query 'Return' --output text
+
+# Create Elastic Load Balancer
+elbv2ARN=$(aws elbv2 create-load-balancer --name "CSE3ACX A3 elb" --subnets "$subnet0"  --security-groups "$elbSG" --query LoadBalancers[].LoadBalancerArn --output text)
+
+# Create target group for private web server EC2 instances
+targetGroupARN=$(aws elbv2 create-target-group --name "CSE3ACX A3 web targets" --protocol HTTP --port 80 --vpc-id "$VPC" --ip-address-type ipv4 --query TargetGroups[].TargetGroupArn --output text)
+
+# Add Private EC2 instances to target group
+aws elbv2 register-targets --target-group-arn "$targetGroupARN" --targets Id=$privEC2ID 
+
+# Create listener on load balancer
+listenerARN=$(aws elbv2 create-listener --load-balancer-arn "$elbv2ARN" --protocol HTTP --port 80 --default-actions Type=forward,TargetGroupArn=$targetGroupARN --query Listeners[].ListenerArn --output text)
+
+# Determine DNS name
+webURL=$(aws elbv2 describe-load-balancers --load-balancer-arns "$elbv2ARN" --query LoadBalancers[].DNSName --output text)
 
 
 ##############   End script #################
@@ -149,3 +170,5 @@ echo "Connect to the public host using the CLI command below from CloudShell"
 echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP ${NC}\n"
 echo "Connect to private host using the CLI command below (on the public host)"
 echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$privIP ${NC}\n"
+echo "Connect to website using the URL below"
+echo -e "${greenText}\t\t http://"$webURL" ${NC}\n"
