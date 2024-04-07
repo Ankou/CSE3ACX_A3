@@ -22,13 +22,13 @@ targetGroupARN=$( jq -r '."targetGroupARN"' $resources )
 elbSG=$( jq -r '."elbSG"' $resources )
 listenerARN=$( jq -r '."listenerARN"' $resources )
 
-# Delete Elastic Load Balancer
-echo -e "\e[31mDeleting Elastic Load Balancer\e[0m"
-aws elbv2 delete-load-balancer --load-balancer-arn $elbv2ARN
-
 # Delete Listener
 echo -e "\e[31mDeleting Listener\e[0m"
 aws elbv2 delete-listener --listener-arn $listenerARN
+
+# Delete Elastic Load Balancer
+echo -e "\e[31mDeleting Elastic Load Balancer\e[0m"
+aws elbv2 delete-load-balancer --load-balancer-arn $elbv2ARN
 
 # Delete ELB target group
 echo -e "\e[31mDeleting ELB target group\e[0m"
