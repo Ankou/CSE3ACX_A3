@@ -159,6 +159,33 @@ do
   sleep 10
 done
 
+####### RDS stuff
+
+# Enable DNS hostnames
+aws ec2 modify-vpc-attribute --vpc-id "$VPC" --enable-dns-hostnames "{\"Value\":true}"
+
+# Create new private subnet
+subnet3=$(aws ec2 create-subnet --vpc-id "$VPC" --cidr-block 172.16.3.0/24 --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=Subnet3 Private}]' --availability-zone us-east-1b --query Subnet.SubnetId --output text)
+
+# Apply Private route table to subnet3
+aws ec2 associate-route-table --subnet-id "$subnet3" --route-table-id "$PrivRouteTable" --query 'AssociationState.State' --output text 
+
+# Allow DB access from public Security Group
+aws ec2 authorize-security-group-ingress --group-id "$privateHostSG" --protocol tcp --port 3306 --source-group "$publicSG"  --query 'Return' --output text
+
+# Create a DB subnet group
+aws rds create-db-subnet-group --db-subnet-group-name mysubnetgroup --db-subnet-group-description "CSE3ACX A3 DB subnet group" --subnet-ids ['"'$subnet1'"','"'$subnet3'"']
+
+# Create the Database 
+# In real life.  Create this earlier in the script otherwise the script pauses for a couple of minutes while it creates the DB
+aws rds create-db-instance --db-instance-identifier CSE3ACX-mysql-instance --db-instance-class db.t3.micro --engine mysql --master-username root --master-user-password secret99 --allocated-storage 5 --db-subnet-group-name mysubnetgroup --vpc-security-group-ids "$privateHostSG" 
+
+# Allow 3306 
+#aws ec2 authorize-security-group-ingress --group-id "$elbSG" --protocol tcp --port 3306 --cidr 0.0.0.0/0 --query 'Return' --output text
+
+# Create target group for private RDS instance
+#DBtargetGroupARN=$(aws elbv2 create-target-group --name "CSE3ACX-A3-DB-targets" --protocol HTTP --port 80 --vpc-id "$VPC" --ip-address-type ipv4 --query TargetGroups[].TargetGroupArn --output text)
+
 ##############   End script #################
 
 # Create json file of resources to cleanup
@@ -168,6 +195,7 @@ JSON_STRING=$( jq -n \
                   --arg sn0 "$subnet0" \
                   --arg sn1 "$subnet1" \
                   --arg sn2 "$subnet2" \
+                  --arg sn3 "$subnet3" \
                   --arg rtb "$PubRouteTable" \
                   --arg privRTB "$PrivRouteTable" \
                   --arg igw "$internetGateway" \
@@ -181,7 +209,7 @@ JSON_STRING=$( jq -n \
                   --arg elbv2ARN "$elbv2ARN" \
                   --arg targetGroupARN "$targetGroupARN" \
                   --arg listenerARN "$listenerARN" \
-                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, Subnet2: $sn2, PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID, natID: $natID, eipalloc: $eipalloc, elbSG: $elbSG, elbv2ARN: $elbv2ARN, targetGroupARN: $targetGroupARN, listenerARN: $listenerARN}' )
+                  '{"VPC-ID": $vpcID, Subnet0: $sn0, Subnet1: $sn1, Subnet2: $sn2, Subnet3: $sn3,PubRouteTable: $rtb, internetGateway: $igw, publicSG: $sg, pubEC2ID: $pubEC2, PrivRouteTable: $privRTB, privateHostSG: $privSG, privEC2ID: $privEC2ID, natID: $natID, eipalloc: $eipalloc, elbSG: $elbSG, elbv2ARN: $elbv2ARN, targetGroupARN: $targetGroupARN, listenerARN: $listenerARN}' )
 
 echo $JSON_STRING > $resources
 
