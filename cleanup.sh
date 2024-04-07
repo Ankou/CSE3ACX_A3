@@ -28,7 +28,7 @@ aws elbv2 delete-load-balancer --load-balancer-arn $elbv2ARN
 
 # Delete Listener
 echo -e "\e[31mDeleting Listener\e[0m"
-aws elbv2 delete-listener --load-balancer-arn $listenerARN
+aws elbv2 delete-listener --listener-arn $listenerARN
 
 # Delete ELB target group
 echo -e "\e[31mDeleting ELB target group\e[0m"
