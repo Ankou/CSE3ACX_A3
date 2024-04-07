@@ -88,7 +88,7 @@ echo sleeping for 40 seconds
 sleep 40
 
 # Create route in Private subnet to use NAT gateway
-aws ec2 create-route --route-table-id "$PrivRouteTable" --destination-cidr-block 0.0.0.0/0 --gateway-id "$natID" --query 'Return' --output text
+aws ec2 create-route --route-table-id "$PrivRouteTable" --destination-cidr-block 0.0.0.0/0 --gateway-id "$natID" --query 'Return' --output text >/dev/null
 
 # Create private EC2 Instance
 privEC2ID=$(aws ec2 run-instances --image-id ami-0b0dcb5067f052a63 --count 1 --instance-type t2.micro --key-name CSE3ACX-A3-key-pair --security-group-ids "$privateHostSG" --subnet-id "$subnet1" --user-data file://CSE3ACX-A3-private-user-data.txt --query Instances[].InstanceId --output text)
@@ -117,7 +117,7 @@ do
 done
 
 # Copy private key to public host
-scp -o StrictHostKeyChecking=no  -i ~/.ssh/CSE3ACX-A3-key-pair.pem  ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP:~/.ssh/CSE3ACX-A3-key-pair.pem
+scp -o StrictHostKeyChecking=no  -i ~/.ssh/CSE3ACX-A3-key-pair.pem  ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP:~/.ssh/CSE3ACX-A3-key-pair.pem >$logFile
 
 #######  Elastic Load Balancer stuff
 
@@ -128,10 +128,10 @@ subnet2=$(aws ec2 create-subnet --vpc-id "$VPC" --cidr-block 172.16.2.0/24 --tag
 elbSG=$(aws ec2 create-security-group --group-name elbSG --description "Security group for Elastic Load Balancer" --vpc-id "$VPC" --query 'GroupId' --output text)
 
 # Allow http from ELB
-aws ec2 authorize-security-group-ingress --group-id "$privateHostSG" --protocol tcp --port 80 --source-group "$elbSG"  --query 'Return' --output text
+aws ec2 authorize-security-group-ingress --group-id "$privateHostSG" --protocol tcp --port 80 --source-group "$elbSG"  --query 'Return' --output text >/dev/null
 
 # Allow HTTP 
-aws ec2 authorize-security-group-ingress --group-id "$elbSG" --protocol tcp --port 80 --cidr 0.0.0.0/0 --query 'Return' --output text
+aws ec2 authorize-security-group-ingress --group-id "$elbSG" --protocol tcp --port 80 --cidr 0.0.0.0/0 --query 'Return' --output text >/dev/null
 
 # Create Elastic Load Balancer
 elbv2ARN=$(aws elbv2 create-load-balancer --name "CSE3ACX-A3-elb" --subnets "$subnet0" "$subnet2" --security-groups "$elbSG" --query LoadBalancers[].LoadBalancerArn --output text)
@@ -140,7 +140,7 @@ elbv2ARN=$(aws elbv2 create-load-balancer --name "CSE3ACX-A3-elb" --subnets "$su
 targetGroupARN=$(aws elbv2 create-target-group --name "CSE3ACX-A3-web-targets" --protocol HTTP --port 80 --vpc-id "$VPC" --ip-address-type ipv4 --query TargetGroups[].TargetGroupArn --output text)
 
 # Add Private EC2 instances to target group
-aws elbv2 register-targets --target-group-arn "$targetGroupARN" --targets Id=$privEC2ID 
+aws elbv2 register-targets --target-group-arn "$targetGroupARN" --targets Id=$privEC2ID >/dev/null
 
 # Create listener on load balancer
 listenerARN=$(aws elbv2 create-listener --load-balancer-arn "$elbv2ARN" --protocol HTTP --port 80 --default-actions Type=forward,TargetGroupArn=$targetGroupARN --query Listeners[].ListenerArn --output text)
@@ -194,3 +194,5 @@ echo "Connect to private host using the CLI command below (on the public host)"
 echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$privIP ${NC}\n"
 echo "Connect to website using the URL below"
 echo -e "${greenText}\t\t http://"$webURL" ${NC}\n"
+
+echo -e "Script Ending @ date +"%Y%m%d-%H%M" " > $logFile
