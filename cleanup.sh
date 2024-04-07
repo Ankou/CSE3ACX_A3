@@ -75,7 +75,7 @@ aws ec2 delete-route --route-table-id $PrivRouteTable --destination-cidr-block 0
 # Delete NAT gateway
 
 echo -e "\e[31mDeleting NAT gateway\e[0m"
-aws ec2 delete-nat-gateway --nat-gateway-id $natGateway
+aws ec2 delete-nat-gateway --nat-gateway-id $natGateway | grep nothing
 
 # Wait for NAT gateway to be deleted
 natState=$(aws ec2 describe-nat-gateways --nat-gateway-ids $natGateway --query NatGateways[].State --output text)
@@ -108,8 +108,8 @@ echo -e "\e[31mDeleting Public subnet 2\e[0m"
 aws ec2 delete-subnet --subnet-id $subnet2
 
 # Delete route table
-echo -e "\e[31mDeleting Public route table\e[0m"
-aws ec2 delete-route-table --route-table-id $PubRouteTable
+#echo -e "\e[31mDeleting Public route table\e[0m"
+#aws ec2 delete-route-table --route-table-id $PubRouteTable
 
 echo -e "\e[31mDeleting Private route table\e[0m"
 aws ec2 delete-route-table --route-table-id $PrivRouteTable
