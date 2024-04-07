@@ -188,7 +188,7 @@ echo $JSON_STRING > $resources
 #  End of script status
 greenText='\033[0;32m'
 NC='\033[0m' # No Color
-echo "Connect to the public host using the CLI command below from CloudShell"
+echo "\nConnect to the public host using the CLI command below from CloudShell"
 echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$pubIP ${NC}\n"
 echo "Connect to private host using the CLI command below (on the public host)"
 echo -e "${greenText}\t\t ssh -i ~/.ssh/CSE3ACX-A3-key-pair.pem ec2-user@$privIP ${NC}\n"
