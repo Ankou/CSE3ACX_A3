@@ -26,8 +26,8 @@ RDSinstance2=cse3acx-second-mysql-instance
 
 # Delete RDS instances
 echo -e "\e[31mDeleting RDS instances\e[0m"
-aws rds delete-db-instance --db-instance-identifier $RDSinstance1 | grep nothing
-aws rds delete-db-instance --db-instance-identifier $RDSinstance2 | grep nothing
+aws rds delete-db-instance --db-instance-identifier $RDSinstance1 --skip-final-snapshot | grep nothing
+aws rds delete-db-instance --db-instance-identifier $RDSinstance2 --skip-final-snapshot | grep nothing
 
 # Delete Listener
 echo -e "\e[31mDeleting Listener\e[0m"
